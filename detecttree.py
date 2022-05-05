@@ -29,7 +29,7 @@ from utils.torch_utils import load_classifier, select_device, time_sync
 
 
 @torch.no_grad()
-def run(weightpath, sourcepath,):
+def runTreeView(weightpath, sourcepath, lurd):
     weights = weightpath  # model.pt path(s)
     source = sourcepath  # file/dir/URL/glob, 0 for webcam
     imgsz = [640, 640]  # inference size (pixels)
@@ -62,6 +62,8 @@ def run(weightpath, sourcepath,):
 
     source = str(source)
     save_img = not nosave and not source.endswith('.txt')  # save inference images
+    webcam = source.isnumeric() or source.endswith('.txt') or source.lower().startswith(
+        ('rtsp://', 'rtmp://', 'http://', 'https://'))
 
     # Directories
     save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)  # increment run
@@ -90,9 +92,15 @@ def run(weightpath, sourcepath,):
     imgsz = check_img_size(imgsz, s=stride)  # check image size
 
     # Dataloader通过不同的输入源来设置不同的数据加载方式
-    dataset = LoadTreeImages(source, img_size=imgsz, stride=stride, auto=pt)
-    #后续注意一下图片尺寸的修改
-    bs = 1  # batch_size
+    if webcam:
+        view_img = check_imshow()
+        cudnn.benchmark = True  # set True to speed up constant image size inference
+        dataset = LoadStreams(source, img_size=imgsz, stride=stride, auto=pt)
+        bs = len(dataset)  # batch_size
+    else:
+        dataset = LoadTreeImages(source, img_size=imgsz, stride=stride, auto=pt, lurd=lurd)
+        # 后续注意一下图片尺寸的修改
+        bs = 1  # batch_size
     vid_path, vid_writer = [None] * bs, [None] * bs
 
     # Run inference
@@ -131,6 +139,7 @@ def run(weightpath, sourcepath,):
 
         # Process predictions对每一张照片做处理
         for i, det in enumerate(pred):  # per image
+            index = 0
             seen += 1
             p, s, im0, frame = path, '', im0s.copy(), getattr(dataset, 'frame', 0)
             p = Path(p)  # to Path
@@ -143,7 +152,7 @@ def run(weightpath, sourcepath,):
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
             imc = im0.copy() if save_crop else im0  # for save_crop
             annotator = Annotator(im0, line_width=line_thickness, example=str(names))
-            dataJson = []  # 用json格式储存数据
+            treeviewdata = {}  # 用字典格式储存数据
             if len(det):
                 # Rescale boxes from img_size to im0 size
                 # 调整预测框的坐标：基于resize+pad的图片的坐标-->基于原size图片的坐标
@@ -157,41 +166,35 @@ def run(weightpath, sourcepath,):
 
                 # Write results 保存预测结果
                 for *xyxy, conf, cls in reversed(det):
-                    if save_txt:  # Write to file
-                        # 将xyxy(左上角+右下角)格式转为xywh(中心点+宽长)格式，并除上w，h做归一化，转化为列表再保存
-                        xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
-                        line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
-                        with open(txt_path + '.txt', 'a') as f:
-                            f.write(('%g ' * len(line)).rstrip() % line + '\n')
-
-                    if save_img or save_crop or view_img:  # Add bbox to image 在原图上画框
-                        c = int(cls)  # integer class
-                        xyxy1 = torch.tensor(xyxy).tolist()
-                        if c == 7 or c == 8 or c == 9 or c == 10 or c == 11 or c == 12:
-                            text = ''
-                        else:
-                            img = im0[int(xyxy1[1]):int(xyxy1[3]), int(xyxy1[0]):int(xyxy1[2])]
-                            # 对数组的图片格式进行编码
-                            success, encoded_image = cv2.imencode(".jpg", img)
-                            # 将数组转为bytes
-                            img_bytes = encoded_image.tobytes()
-                            result = aipOcr.basicAccurate(img_bytes)
-                            mywords = result["words_result"]
-                            if mywords==[]:
-                                continue
-                            else:
-                                text = mywords[0]["words"]
-                        label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
-                        annotator.box_label(xyxy, label, color=colors(c, True))
-                        if save_crop:
-                            save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
-                        xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4))).view(-1).tolist()
-                        x = {'class': names[c], 'int': c, 'x': xywh[0], 'y': xywh[1], 'w': xywh[2], 'h': xywh[3],
-                             'ocr': text}
-                        # print(x)
-                        dataJson.append(x)
-
-            print(json.dumps(dataJson,indent =4,ensure_ascii=False))
+                    c = int(cls)  # integer class
+                    xyxy1 = torch.tensor(xyxy).tolist()
+                    img = im0[int(xyxy1[1]):int(xyxy1[3]), int(xyxy1[0]):int(xyxy1[2])]
+                    # 对数组的图片格式进行编码
+                    success, encoded_image = cv2.imencode(".jpg", img)
+                    # 将数组转为bytes
+                    img_bytes = encoded_image.tobytes()
+                    result = aipOcr.basicAccurate(img_bytes)
+                    mywords = result["words_result"]
+                    text = ''
+                    if mywords == []:
+                        continue
+                    else:
+                        for item in mywords:
+                            for key in item:
+                                text = text + item[key]
+                    xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4))).view(-1).tolist()
+                    x = {'class': names[c], 'int': c, 'x': xywh[0], 'y': xywh[1], 'w': xywh[2], 'h': xywh[3],
+                            'ocr': text}
+                    # print(x)
+                    treeviewdata['GUI' + str(index)] = x
+                    index += 1
+                    # 画框
+                for *xyxy, conf, cls in reversed(det):
+                    c = int(cls)  # integer class
+                    label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
+                    annotator.box_label(xyxy, label, color=colors(c, True))
+            # print(treeviewdata)
+            # print(json.dumps(treeviewdata,indent =4,ensure_ascii=False))
 
             # Print time (inference-only)
             print(f'{s}Done. ({t3 - t2:.3f}s)')
@@ -209,7 +212,7 @@ def run(weightpath, sourcepath,):
     if update:
         strip_optimizer(weights)  # update model (to fix SourceChangeWarning)
 
-    return dataJson
+    return treeviewdata
 
 if __name__ == "__main__":
     run()

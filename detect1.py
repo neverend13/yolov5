@@ -24,6 +24,7 @@ from utils.general import apply_classifier, check_img_size, check_imshow, check_
     strip_optimizer, xyxy2xywh
 from utils.plots import Annotator, colors
 from utils.torch_utils import load_classifier, select_device, time_sync
+from detecttree import runTreeView
 
 APP_ID = "25861491"
 API_Key = "Z54zW5i5heoTCDkcNUO0OFsc"
@@ -167,10 +168,16 @@ def run(weightpath, sourcepath):
                         xyxy1 = torch.tensor(xyxy).tolist()
                         label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                         annotator.box_label(xyxy, label, color=colors(c, True))
+                        text = ''
                         if save_crop:
                             save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
-                        if c == 7 or c == 8 or c == 9 or c == 10 or c == 11 or c == 12:
+                        if names[c] == 'Spinner' or names[c] == 'Toolbar' or names[c] == 'ToolButton' or names[
+                            c] == 'TextArea' or names[c] == 'TableView':
                             text = ''
+                        elif names[c] == 'TreeView':
+                            treeviewData = runTreeView('runs/train/treeview/best.pt', 'data/gui/', xyxy1)
+                            # print(treeviewData)
+                            text = treeviewData
                         else:
                             img = im0[int(xyxy1[1]):int(xyxy1[3]), int(xyxy1[0]):int(xyxy1[2])]
                             # 对数组的图片格式进行编码
@@ -182,7 +189,9 @@ def run(weightpath, sourcepath):
                             if mywords==[]:
                                 continue
                             else:
-                                text = mywords[0]["words"]
+                                for item in mywords:
+                                    for key in item:
+                                        text = text + item[key]
                         xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4))).view(-1).tolist()
                         x = {'class': names[c], 'int': c, 'x': xywh[0], 'y': xywh[1], 'w': xywh[2], 'h': xywh[3],
                              'ocr': text}
@@ -212,7 +221,7 @@ def run(weightpath, sourcepath):
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'best.pt', help='model path(s)')
+    parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'runs/train/filezilla/best.pt', help='model path(s)')
     parser.add_argument('--source', type=str, default=ROOT / 'data/gui', help='file/dir/URL/glob, 0 for webcam')
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[800], help='inference size h,w')
     parser.add_argument('--conf-thres', type=float, default=0.25, help='confidence threshold')
@@ -245,7 +254,7 @@ def parse_opt():
 
 def main():
     check_requirements(exclude=('tensorboard', 'thop'))
-    run()
+    run('runs/train/filezilla/best.pt','data/gui/')
 
 
 if __name__ == "__main__":
