@@ -22,4 +22,4 @@ img = im[248:580,0:1104]
 dataJsontest = run('runs/train/treeview/best.pt', 'data/gui/')
 find_ocr("用户名", dataJsontest)
 
-#print(json.dumps(dataJsontest, indent=4, ensure_ascii=False))
+print(json.dumps(dataJsontest, indent=4, ensure_ascii=False))

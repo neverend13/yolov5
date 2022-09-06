@@ -59,7 +59,6 @@ def runTreeView(weightpath, sourcepath, lurd):
     API_Key = "Z54zW5i5heoTCDkcNUO0OFsc"
     Secret_Key = "lMEhnGCN52G6DcXYn7ZRV7oHLT7ZfviM"
     aipOcr = AipOcr(APP_ID, API_Key, Secret_Key)
-
     source = str(source)
     save_img = not nosave and not source.endswith('.txt')  # save inference images
     webcam = source.isnumeric() or source.endswith('.txt') or source.lower().startswith(
@@ -160,14 +159,11 @@ def runTreeView(weightpath, sourcepath, lurd):
                 det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
 
                 # Print results 打印检测到的类别
-                for c in det[:, -1].unique():
-                    n = (det[:, -1] == c).sum()  # detections per class
-                    s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
-
                 # Write results 保存预测结果
                 for *xyxy, conf, cls in reversed(det):
                     c = int(cls)  # integer class
                     xyxy1 = torch.tensor(xyxy).tolist()
+                    # 截取需要读取OCR的那部分图像
                     img = im0[int(xyxy1[1]):int(xyxy1[3]), int(xyxy1[0]):int(xyxy1[2])]
                     # 对数组的图片格式进行编码
                     success, encoded_image = cv2.imencode(".jpg", img)
@@ -179,14 +175,16 @@ def runTreeView(weightpath, sourcepath, lurd):
                     if mywords == []:
                         continue
                     else:
+                        # 遍历数组
                         for item in mywords:
                             for key in item:
                                 text = text + item[key]
                     xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4))).view(-1).tolist()
-                    x = {'class': names[c], 'int': c, 'x': xywh[0], 'y': xywh[1], 'w': xywh[2], 'h': xywh[3],
-                            'ocr': text}
+                    x = {'class': names[c], 'int': c, 'x': xywh[0] + lurd[0], 'y': xywh[1] + lurd[1], 'w': xywh[2],
+                         'h': xywh[3],
+                         'ocr': text}
                     # print(x)
-                    treeviewdata['GUI' + str(index)] = x
+                    treeviewdata['Tree' + str(index)] = x
                     index += 1
                     # 画框
                 for *xyxy, conf, cls in reversed(det):
@@ -215,4 +213,4 @@ def runTreeView(weightpath, sourcepath, lurd):
     return treeviewdata
 
 if __name__ == "__main__":
-    run()
+    runTreeView('runs/train/treeview/best.pt', 'data/gui/',[64.0, 159.0, 607.0, 315.0])

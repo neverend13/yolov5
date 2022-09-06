@@ -25,6 +25,7 @@ from utils.general import apply_classifier, check_img_size, check_imshow, check_
 from utils.plots import Annotator, colors
 from utils.torch_utils import load_classifier, select_device, time_sync
 from detecttree import runTreeView
+from detecttable import runTable
 
 APP_ID = "25861491"
 API_Key = "Z54zW5i5heoTCDkcNUO0OFsc"
@@ -53,7 +54,7 @@ def run(weightpath, sourcepath):
     project = ROOT / 'runs/detect'  # save results to project/name
     name = 'exp'  # save results to project/name
     exist_ok = False  # existing project/name ok, do not increment
-    line_thickness = 1  # bounding box thickness (pixels)
+    line_thickness = 2  # bounding box thickness (pixels)
     hide_labels = False  # hide labels
     hide_conf = False  # hide confidences
     half = False  # use FP16 half-precision inference
@@ -172,12 +173,14 @@ def run(weightpath, sourcepath):
                         if save_crop:
                             save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
                         if names[c] == 'Spinner' or names[c] == 'Toolbar' or names[c] == 'ToolButton' or names[
-                            c] == 'TextArea' or names[c] == 'TableView':
+                            c] == 'TextArea':
                             text = ''
                         elif names[c] == 'TreeView':
-                            treeviewData = runTreeView('runs/train/treeview/best.pt', 'data/gui/', xyxy1)
-                            # print(treeviewData)
+                            treeviewData = runTreeView('runs/train/treeview/best.pt', sourcepath, xyxy1)
                             text = treeviewData
+                        elif names[c]=='TableView':
+                            tabledata = runTable(sourcepath, xyxy1)
+                            text = tabledata
                         else:
                             img = im0[int(xyxy1[1]):int(xyxy1[3]), int(xyxy1[0]):int(xyxy1[2])]
                             # 对数组的图片格式进行编码

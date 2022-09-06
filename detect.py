@@ -262,10 +262,12 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
 
                     if save_img or save_crop or view_img:  # 获取xywh并将其保存
                         c = int(cls)  # integer class
+                        xyxy1 = torch.tensor(xyxy).tolist()
+                        print(xyxy1)
                         #print(torch.tensor(xyxy).tolist())
                         xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4))).view(-1).tolist()
                         x = {'class': names[c], 'x': xywh[0], 'y': xywh[1], 'w': xywh[2], 'h': xywh[3]}
-                        #print(x)
+                        print(x)
                         dataJson.append(x)
                         #print("--------")
             #print(json.dumps(dataJson,indent =4))
@@ -295,7 +297,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                             w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                             h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
                         else:  # stream
-                            fps, w, h = 30, im0.shape[1], im0.shape[0]
+                            fps, w, h = 0.5, im0.shape[1], im0.shape[0]
                             save_path += '.mp4'
                         vid_writer[i] = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                     vid_writer[i].write(im0)
@@ -312,9 +314,9 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'runs/train/filezilla/best.pt', help='model path(s)')
-    parser.add_argument('--source', type=str, default=ROOT / 'data/gui', help='file/dir/URL/glob, 0 for webcam')
-    parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[800], help='inference size h,w')
+    parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'runs/train/treeview/best.pt', help='model path(s)')
+    parser.add_argument('--source', type=str, default=ROOT / 'runs/detect/exp30/crops/TreeView', help='file/dir/URL/glob, 0 for webcamROOT / data/gui')
+    parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640], help='inference size h,w')
     parser.add_argument('--conf-thres', type=float, default=0.25, help='confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.45, help='NMS IoU threshold')
     parser.add_argument('--max-det', type=int, default=1000, help='maximum detections per image')
@@ -332,7 +334,7 @@ def parse_opt():
     parser.add_argument('--project', default=ROOT / 'runs/detect', help='save results to project/name')
     parser.add_argument('--name', default='exp', help='save results to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
-    parser.add_argument('--line-thickness', default=3, type=int, help='bounding box thickness (pixels)')
+    parser.add_argument('--line-thickness', default=1, type=int, help='bounding box thickness (pixels)')
     parser.add_argument('--hide-labels', default=False, action='store_true', help='hide labels')
     parser.add_argument('--hide-conf', default=False, action='store_true', help='hide confidences')
     parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')

@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from models.experimental import attempt_load
 from utils.datasets import letterbox
-from utils.general import check_img_size, non_max_suppression, save_one_box, scale_coords, set_logging, xyxy2xywh
+from utils.general import check_img_size, non_max_suppression, scale_coords, xyxy2xywh, set_logging, check_requirements
 from utils.plots import Annotator, colors
 from utils.torch_utils import load_classifier, select_device, time_sync
 
@@ -13,9 +13,9 @@ from utils.torch_utils import load_classifier, select_device, time_sync
 def detect(
         # --------------------这里更改配置--------------------
         # ---------------------------------------------------
-        weights='best.pt',  # 训练好的模型路径   （必改）
+        weights= 'yolov5s.pt',  # 训练好的模型路径   （必改）
         imgsz=800,  # 训练模型设置的尺寸 （必改）
-        cap=1,  # 摄像头
+        cap=0,  # 摄像头
         conf_thres=0.25,  # 置信度
         iou_thres=0.45,  # NMS IOU 阈值
         max_det=1000,  # 最大侦测的目标数
@@ -64,7 +64,7 @@ def detect(
         labels = []
         # 计时
         t0 = time.time()
-        img0 = cap.read()
+        ref, img0 = cap.read()
         # 填充调整大小
         img = letterbox(img0, imgsz, stride=stride)[0]
         # 转换
@@ -104,7 +104,7 @@ def detect(
                     n = (det[:, -1] == c).sum()
                     # 添加到字符串
                     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "
-                # 结果输出
+                    # 结果输出
                 for *xyxy, conf, cls in reversed(det):
                     # 归一化xywh
                     xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()
