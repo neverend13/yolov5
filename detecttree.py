@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import sys
+import time
 from pathlib import Path
 from aip import AipOcr
 
@@ -168,8 +169,9 @@ def runTreeView(weightpath, sourcepath, lurd):
                     # 对数组的图片格式进行编码
                     success, encoded_image = cv2.imencode(".jpg", img)
                     # 将数组转为bytes
+                    time.sleep(1)
                     img_bytes = encoded_image.tobytes()
-                    result = aipOcr.basicAccurate(img_bytes)
+                    result = aipOcr.basicGeneral(img_bytes)
                     mywords = result["words_result"]
                     text = ''
                     if mywords == []:

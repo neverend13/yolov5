@@ -1,5 +1,6 @@
 import json
 import os
+import time
 
 import cv2
 from aip import AipOcr
@@ -17,7 +18,7 @@ def runTable(directory_name, lurd):
         success, encoded_image = cv2.imencode(".png", image)
         # 将数组转为bytes
         img_bytes = encoded_image.tobytes()
-        result = aipOcr.accurate(img_bytes)
+        result = aipOcr.general(img_bytes)
         mywords = result["words_result"]
         tabledata = {}  # 用字典格式储存数据
         count = 0  # 记录会被储存的table GUI的个数

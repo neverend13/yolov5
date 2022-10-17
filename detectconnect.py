@@ -34,7 +34,7 @@ aipOcr = AipOcr(APP_ID, API_Key, Secret_Key)
 
 
 @torch.no_grad()
-def run(weightpath, sourcepath):
+def run(weightpath, sourcepath,model):
     weights = weightpath  # model.pt path(s)
     source = sourcepath  # file/dir/URL/glob, 0 for webcam
     imgsz = [800, 800]  # inference size (pixels)
@@ -74,7 +74,6 @@ def run(weightpath, sourcepath):
     half &= device.type != 'cpu'  # half precision only supported on CUDA
 
     # Load model
-    model = attempt_load(weights, map_location=device)
     stride = int(model.stride.max())  # model stride
     names = model.module.names if hasattr(model, 'module') else model.names  # get class names
     if half:
@@ -159,9 +158,9 @@ def run(weightpath, sourcepath):
                             c] == 'TextArea':
                             text = ''
                         elif names[c] == 'TreeView':
-                            treeviewData = runTreeView('runs/train/treeview/best.pt', sourcepath, xyxy1)
-                            text = treeviewData
-                            #text = ''
+                            # treeviewData = runTreeView('runs/train/treeview/best.pt', sourcepath, xyxy1)
+                            # text = treeviewData
+                            text = ''
                         elif names[c] == 'TableView':
                             tabledata = runTable(sourcepath, xyxy1)  # lurd意思是左上右下的坐标
                             text = tabledata
@@ -171,7 +170,7 @@ def run(weightpath, sourcepath):
                             success, encoded_image = cv2.imencode(".jpg", img)
                             # 将数组转为bytes
                             img_bytes = encoded_image.tobytes()
-                            result = aipOcr.basicGeneral(img_bytes)
+                            result = aipOcr.basicAccurate(img_bytes)
                             mywords = result["words_result"]
                             if mywords==[]:
                                 continue
@@ -242,7 +241,13 @@ def parse_opt():
 
 def main():
     check_requirements(exclude=('tensorboard', 'thop'))
-    run('runs/train/filezilla/best.pt', 'D:/PycharmProjects/yolov5/data/gui')
+    half = False
+    weights = 'runs/train/filezilla/best.pt'
+    device = select_device(0)
+    half &= device.type != 'cpu'
+
+    model = attempt_load(weights, map_location=device)
+    run('runs/train/filezilla/best.pt', 'D:/PycharmProjects/yolov5/data/gui',model)
 
 
 if __name__ == "__main__":

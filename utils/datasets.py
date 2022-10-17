@@ -162,13 +162,13 @@ class LoadImages:
         if '*' in p:
             files = sorted(glob.glob(p, recursive=True))  # glob
         elif os.path.isdir(p):
-            files = sorted(glob.glob(os.path.join(p, '*.*')))  # dir
+            files = sorted(glob.glob(os.path.join(p, '*.*')))  # dir glob.glob:只想要获取当前层次的文件下的文件
         elif os.path.isfile(p):
             files = [p]  # files
         else:
             raise Exception(f'ERROR: {p} does not exist')
 
-        images = [x for x in files if x.split('.')[-1].lower() in IMG_FORMATS]
+        images = [x for x in files if x.split('.')[-1].lower() in IMG_FORMATS]   # 对于files中的每个x如果x.split('.')[-1].lower() in IMG_FORMATS为真，则将其添加到列表中
         videos = [x for x in files if x.split('.')[-1].lower() in VID_FORMATS]
         ni, nv = len(images), len(videos)
 
@@ -182,7 +182,7 @@ class LoadImages:
         if any(videos):
             self.new_video(videos[0])  # new video
         else:
-            self.cap = None
+            self.cap = None  # cap:是否有摄像头
         assert self.nf > 0, f'No images or videos found in {p}. ' \
                             f'Supported formats are:\nimages: {IMG_FORMATS}\nvideos: {VID_FORMATS}'
 
@@ -224,7 +224,7 @@ class LoadImages:
 
         # Convert
         img = img.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
-        img = np.ascontiguousarray(img)
+        img = np.ascontiguousarray(img) # 将一个内存不连续存储的数组转换为内存连续存储的数组，使得运行速度更快。
 
         return path, img, img0, self.cap
 
